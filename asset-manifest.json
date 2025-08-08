@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/CausaPoll-front/static/css/main.1c6cc986.css",
+    "main.js": "/CausaPoll-front/static/js/main.a41235a2.js",
+    "static/js/453.aeddeaa0.chunk.js": "/CausaPoll-front/static/js/453.aeddeaa0.chunk.js",
+    "index.html": "/CausaPoll-front/index.html",
+    "main.1c6cc986.css.map": "/CausaPoll-front/static/css/main.1c6cc986.css.map",
+    "main.a41235a2.js.map": "/CausaPoll-front/static/js/main.a41235a2.js.map",
+    "453.aeddeaa0.chunk.js.map": "/CausaPoll-front/static/js/453.aeddeaa0.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.1c6cc986.css",
+    "static/js/main.a41235a2.js"
+  ]
+}
