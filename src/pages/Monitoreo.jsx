@@ -45,8 +45,8 @@ function Monitoreo() {
   return (
     <div style={{ padding: '1rem' }}>
       <h2>Monitoreando encuesta ID: {id}</h2>
-      <p>Clave: {clave}</p>
-      <p>Clave: http://localhost:3000/votar/{id}</p>
+      <p>Clave: NOP</p>
+      <p>Link: Clave: {`${window.location.origin}/votar/${id}`}</p>
       <p>Socket: {conectado ? '🟢 Conectado' : '🔴 Desconectado'}</p>
 
       {resultados.length > 0 ? (
