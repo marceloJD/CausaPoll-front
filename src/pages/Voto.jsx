@@ -1,4 +1,3 @@
-// src/components/Voto.jsx
 import { useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import api from '../services/api';
@@ -9,6 +8,7 @@ function Voto() {
   const [cargando, setCargando] = useState(true);
   const [mensaje, setMensaje] = useState('');
   const [votado, setVotado] = useState(false);
+  const [seleccion, setSeleccion] = useState(null);
 
   useEffect(() => {
     async function cargarEncuesta() {
@@ -25,9 +25,11 @@ function Voto() {
     cargarEncuesta();
   }, [id]);
 
-  const votar = async (indiceOpcion) => {
+  const votar = async () => {
+    if (seleccion === null) return;
+
     try {
-      await api.post(`/api/encuestas/${id}/votar`, { opcion: indiceOpcion });
+      await api.post(`/api/encuestas/${id}/votar`, { opcion: seleccion });
       setMensaje('✅ ¡Gracias por votar!');
       setVotado(true);
     } catch (error) {
@@ -35,32 +37,60 @@ function Voto() {
     }
   };
 
-  if (cargando) return <p>Cargando encuesta...</p>;
-  if (!encuesta) return <p>{mensaje}</p>;
-  if (encuesta.expirada) return <p>⏰ La encuesta ha expirado.</p>;
-  if (votado) return <p>{mensaje}</p>;
+  if (cargando) return <p className="text-center mt-5">Cargando encuesta...</p>;
+  if (!encuesta) return <p className="text-center mt-5">{mensaje}</p>;
+  if (encuesta.expirada) return <p className="text-center mt-5">⏰ La encuesta ha expirado.</p>;
+  if (votado) {
+    return (
+      <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
+        <div className="card shadow-sm p-4 text-center" style={{ width: '100%', maxWidth: '500px' }}>
+          <h2 className="card-title mb-4">Encuesta enviada</h2>
+          <div className={`alert ${mensaje.includes('✅') ? 'alert-success' : 'alert-danger'}`} role="alert">
+            {mensaje}
+          </div>
+          <p className="text-muted mt-3">Puedes cerrar esta ventana.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div>
-      <h2>{encuesta.titulo}</h2>
-      <p>{encuesta.pregunta}</p>
+    <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
+      <div className="card shadow-sm p-4" style={{ width: '100%', maxWidth: '500px' }}>
+        <h4 className="card-title mb-3">{encuesta.titulo || 'Online test'}</h4>
+        <p className="card-text mb-4">{encuesta.pregunta || 'Untitled Question'}</p>
 
-      {encuesta.opciones.map((op, i) => (
-        <button
-          key={i}
-          onClick={() => votar(i)}
-          style={{
-            display: 'block',
-            margin: '8px 0',
-            padding: '10px',
-            fontSize: '16px'
-          }}
-        >
-          {op.texto}
-        </button>
-      ))}
+        <form>
+          {encuesta.opciones.map((op, i) => (
+            <div className="form-check mb-2" key={i}>
+              <input
+                className="form-check-input"
+                type="radio"
+                name="opcion"
+                id={`opcion${i}`}
+                checked={seleccion === i}
+                onChange={() => setSeleccion(i)}
+              />
+              <label className="form-check-label" htmlFor={`opcion${i}`}>
+                {op.texto}
+              </label>
+            </div>
+          ))}
 
-      {mensaje && <p>{mensaje}</p>}
+          <div className="d-grid mt-4">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={votar}
+              disabled={seleccion === null}
+            >
+              Enviar
+            </button>
+          </div>
+
+          {mensaje && <p className="mt-3 text-center">{mensaje}</p>}
+        </form>
+      </div>
     </div>
   );
 }
