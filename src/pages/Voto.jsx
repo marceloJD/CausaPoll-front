@@ -9,12 +9,16 @@ function Voto() {
   const [mensaje, setMensaje] = useState('');
   const [votado, setVotado] = useState(false);
   const [seleccion, setSeleccion] = useState(null);
+  const [tiempoRestante, setTiempoRestante] = useState(null);
 
   useEffect(() => {
     async function cargarEncuesta() {
       try {
         const res = await api.get(`/api/encuestas/${id}`);
         setEncuesta(res.data);
+        if (res.data.tiempoRestante != null) {
+          setTiempoRestante(res.data.tiempoRestante);
+        }
       } catch (error) {
         setMensaje('❌ No se pudo cargar la encuesta.');
       } finally {
@@ -24,6 +28,18 @@ function Voto() {
 
     cargarEncuesta();
   }, [id]);
+
+  // Contador regresivo
+  useEffect(() => {
+    if (tiempoRestante == null) return;
+    if (tiempoRestante <= 0) return;
+
+    const timer = setInterval(() => {
+      setTiempoRestante(prev => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [tiempoRestante]);
 
   const votar = async () => {
     if (seleccion === null) return;
@@ -56,7 +72,12 @@ function Voto() {
 
   return (
     <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
-      <div className="card shadow-sm p-4" style={{ width: '100%', maxWidth: '500px' }}>
+      <div
+        className="card shadow-sm p-4 position-relative"
+        style={{ width: '100%', maxWidth: '500px' }}
+      >
+        
+
         <h4 className="card-title mb-3">{encuesta.titulo || 'Online test'}</h4>
         <p className="card-text mb-4">{encuesta.pregunta || 'Untitled Question'}</p>
 
@@ -82,9 +103,16 @@ function Voto() {
               type="button"
               className="btn btn-primary"
               onClick={votar}
-              disabled={seleccion === null}
+              disabled={seleccion === null || tiempoRestante === 0}
             >
-              Enviar
+              Enviar (
+              <span
+                className={tiempoRestante <= 10 ? 'text-danger fw-bold' : 'text-white'}
+              >
+                {Math.floor(tiempoRestante / 60)}:
+                {String(tiempoRestante % 60).padStart(2, '0')}
+              </span>
+              )
             </button>
           </div>
 
