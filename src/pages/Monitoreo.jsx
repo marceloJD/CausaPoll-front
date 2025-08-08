@@ -20,7 +20,7 @@ function Monitoreo() {
   useEffect(() => {
     if (!id || !clave) return;
 
-    const socket = io('http://localhost:4000'); // Ajusta según backend
+    const socket = io('https://causapoll-api-production.up.railway.app'); // Ajusta según backend
 
     socket.on('connect', () => {
       setConectado(true);
@@ -32,7 +32,7 @@ function Monitoreo() {
     });
 
     // Estado inicial
-    fetch(`http://localhost:4000/api/encuestas/${id}/avance?key=${clave}`)
+    fetch(`https://causapoll-api-production.up.railway.app/api/encuestas/${id}/avance?key=${clave}`)
       .then((res) => res.json())
       .then((data) => setResultados(data.opciones))
       .catch((err) => console.error('Error al obtener encuesta:', err));
