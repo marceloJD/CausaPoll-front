@@ -95,11 +95,10 @@ export default function useVotoMejoradoViewModel() {
   useEffect(() => {
       const cargarSecciones = async () => {
         try {
-          //const data = await obtenerSeccionesUseCase(); // trae JSON de repo/API
+          
           setCargandoEncuesta(1);
-          //const data1 = jsonPrueba();
-          //await new Promise((resolve) => setTimeout(resolve, 1000));
-          const response = await fetch(`http://localhost:4000/api/encuestaMejorada/${id}`);
+          
+          const response = await fetch(`https://causapoll-api-production.up.railway.app/api/encuestaMejorada/${id}`);
           if (!response.ok) {
             throw new Error("Error en la petición");
           }
