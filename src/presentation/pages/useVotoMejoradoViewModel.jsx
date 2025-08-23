@@ -2,8 +2,8 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 
-export default function useVotoMejoradoViewModel() {
-   const { id } = useParams(); // 👈 aquí traemos el id de la URL
+export default function useVotoMejoradoViewModel(getEncuestasUseCase,postEncuestaUseCase) {
+  const { id } = useParams(); // 👈 aquí traemos el id de la URL
   const [seccionActual, setSeccionActual] = useState(0);
   const [respuestas, setRespuestas] = useState([]);
   const [secciones, setSecciones] = useState([]);
@@ -11,13 +11,25 @@ export default function useVotoMejoradoViewModel() {
   const [cargandoEncuesta , setCargandoEncuesta]=useState(0);
   const [pilaSeccionesVisitadas, setPilaSeccionesVisitadas]=useState([]);
   const [encuestaFinalizada , setEncuestaFinalizada ]=useState(false);
-  
+  const [mensajeSimpleVisible, setMensajeSimpleVisible]=useState(false);
+  const [mensajeSimpleTitulo, setMensajeSimpleTitulo]=useState("");
+  const [mensajeSimpleTexto, setMensajeSimpleTexto]=useState("");
+  const [preguntasQueFallaroObligatoriedad,setPreguntasQueFallaroObligatoriedad]=useState([]);
+  const [estadoEnvio,setEstadoEnvio]=useState(0)
   //////////////////////////////////////////////////////////////
   const onEnviar = async () => {
+    var preguntasRepondidas = getPreguntasRespondidas(encuesta,pilaSeccionesVisitadas,respuestas)    
     try {
-      
+      setEstadoEnvio(1)
+      var res = await postEncuestaUseCase.execute({encuesta:encuesta.id,titulo:encuesta.titulo,respuestas:preguntasRepondidas})
+      setEstadoEnvio(2)
+      setMensajeSimpleTexto("Encuesta enviada correctamente")
+      setMensajeSimpleTitulo("Fin de la encuesta")
+      setMensajeSimpleVisible(true)
     } catch (error) {
-      
+      setMensajeSimpleTexto("Hubo un error al enviar su encuesta")
+      setMensajeSimpleTitulo("Error")
+      setEstadoEnvio(3)
     }
   };
   
@@ -37,8 +49,6 @@ export default function useVotoMejoradoViewModel() {
     if(encuestaFinalizada==true){
       return
     }
-
-
     var seccion = secciones[seccionActual].siguiente
   
     if(seccion==null||seccion==undefined){
@@ -47,9 +57,52 @@ export default function useVotoMejoradoViewModel() {
       seccion = parseInt(seccion, 10)
     }
     ////////validacion de obligatoriedad/////////
+    var cumple = true
+    var fallidas =[]
+    setPreguntasQueFallaroObligatoriedad(fallidas)
+    secciones[seccionActual].preguntas.forEach((pregunta)=>{
+      if(pregunta.obligatoria){
+        const respuesta = respuestas.find(r => r.idPregunta === pregunta.id);
+        var evaluacion = cumpleObligatoriedad(pregunta,respuesta)
+        if(evaluacion!=true){
+          cumple=false  
+          fallidas.push(pregunta.id)        
+        }
+      }
+      
+    })
+    if(!cumple){
+      setPreguntasQueFallaroObligatoriedad(fallidas)
+      setMensajeSimpleTexto("Rellenar las preguntas obligatorias(*) ")
+      setMensajeSimpleTitulo("Preguntas obligatorias")
+      setMensajeSimpleVisible(true)
+      return
+    }
+
+    //////////VALIDACION DE reglasDeSalida///////////
+    cumple = true
+  
+    if(secciones[seccionActual].reglasDeSalida){     
+      cumple = false 
+      var mensaje=evaluarReglasDeSalida(respuestas,secciones[seccionActual].reglasDeSalida)      
+      if(mensaje == ""){///NO HUBO ERROR, secumplio todo        
+        cumple = true        
+      }      
+      if(secciones[seccionActual].reglasDeSalida.length==0){////NO HABIAN REGLAS
+        cumple = true
+      }
+    }
+    if(!cumple){         
+      setMensajeSimpleTexto(mensaje)
+      setMensajeSimpleTitulo("Valide sus respuestas")
+      setMensajeSimpleVisible(true)
+      return
+    }
+   
+
 
     ///////validacion de siguiente seccion///////
-    var salto=evaluarReglas(respuestas,secciones[seccionActual].reglasDeSecuencia)
+    var salto=evaluarReglasDeSalto(respuestas,secciones[seccionActual].reglasDeSecuencia)
     if(salto!=""){
       seccion = parseInt(salto, 10)
     }
@@ -89,6 +142,13 @@ export default function useVotoMejoradoViewModel() {
     setRespuestas(nuevo);
     console.log("Respuestas actualizadas:", nuevo);
   }
+ const actualizarPreguntasQueFallaroObligatoriedad = (id) => {
+  console.log("preguntasQueFallaroObligatoriedad",id,preguntasQueFallaroObligatoriedad)
+  const fallidas = preguntasQueFallaroObligatoriedad.filter(it => it !== id)
+  console.log("fallidas",id,fallidas)
+  setPreguntasQueFallaroObligatoriedad(fallidas)
+  }
+  
  
 
   ///////////////////////////////////////////////////////////
@@ -98,17 +158,19 @@ export default function useVotoMejoradoViewModel() {
           
           setCargandoEncuesta(1);
           
-          const response = await fetch(`https://causapoll-api-production.up.railway.app/api/encuestaMejorada/${id}`);
+          const data = await getEncuestasUseCase.execute(id)
+          //console.log(123123,response)
+          /*
           if (!response.ok) {
+            console.log(123123,response)
             throw new Error("Error en la petición");
           }
-
-          const data = await response.json();
-    
+          */          
           setSecciones(data["nodos"]);         
           setEncuesta(data);                 
           setCargandoEncuesta(2)
         } catch (error) {
+          console.log(error)
           setCargandoEncuesta(3)
         }
       };
@@ -128,89 +190,23 @@ export default function useVotoMejoradoViewModel() {
     cargandoEncuesta,    
     onCambioEnPregunta,
     pilaSeccionesVisitadas,
-    encuestaFinalizada
-
+    encuestaFinalizada,
+    mensajeSimpleVisible,
+    mensajeSimpleTexto,
+    mensajeSimpleTitulo,
+    setMensajeSimpleVisible,
+    preguntasQueFallaroObligatoriedad,
+    setPreguntasQueFallaroObligatoriedad,
+    actualizarPreguntasQueFallaroObligatoriedad,
+    estadoEnvio
   };
 }
 
-function jsonPrueba() {
-  return {
-    "id": "c0d1e2f3",
-    "titulo": "Encuesta simple: Hijos",
-    "descripcion": "Flujo condicional según si tienes hijos o no.",
-    "tiempoSegundos": 1800,
-    "activo": true,
-    "nodos": [
-      {
-        "id": "0",
-        "preguntas": [
-          {
-            "id": "0.0",
-            "tipo": "opcionUnica",
-            "descripcion": "¿Tienes hijos?",
-            "opciones": ["Sí", "No"],
-            "obligatoria": true
-          }
-        ],
-        "reglasDeSecuencia": [
-          {
-            "condiciones": [
-              { "id": "0.0", "operador": "==", "valor": "Sí" }
-            ],
-            "relacion": "AND",
-            "nodoSiguiente": "1"
-          },
-          {
-            "condiciones": [
-              { "id": "0.0", "operador": "==", "valor": "No" }
-            ],
-            "relacion": "AND",
-            "nodoSiguiente": "2"
-          }
-        ]
-      },
-      {
-        "id": "1",
-        "preguntas": [
-          {
-            "id": "1.0",
-            "tipo": "texto",
-            "descripcion": "¿Cuál es su nombre?",
-            "obligatoria": true
-          }
-        ],
-        "siguiente": "3"
-      },
-      {
-        "id": "2",
-        "preguntas": [
-          {
-            "id": "2.0",
-            "tipo": "texto",
-            "descripcion": "¿Por qué no tienes hijos?",
-            "obligatoria": true
-          }
-        ],
-        "siguiente": "3"
-      },
-      {
-        "id": "3",
-        "preguntas": [
-          {
-            "id": "3.0",
-            "tipo": "texto",
-            "descripcion": "Comentario (opcional)",
-            "obligatoria": false
-          }
-        ]
-      }
-    ]
-  }
-}
 
 
 
-function evaluarReglas(respuestas, reglasDeSecuencia) {
+
+function evaluarReglasDeSalto(respuestas, reglasDeSecuencia) {
   if(reglasDeSecuencia==null){
     return ""
   }
@@ -224,10 +220,44 @@ function evaluarReglas(respuestas, reglasDeSecuencia) {
       cumple = resultados.every(r => r === true);
     } else if (regla.relacion === "OR") {
       cumple = resultados.some(r => r === true);
+    }else{////CASO LENGUAJE  [0]*-([1]+[2])
+      var res = evaluarExpresionBooleana(regla.relacion,resultados)
+      if(res){
+        return regla.nodoSiguiente;
+      }
     }
 
     if (cumple) {
       return regla.nodoSiguiente;
+    }
+  }
+  return "";
+}
+function evaluarReglasDeSalida(respuestas, reglasDeSalida) {
+  if(reglasDeSalida==null){
+    return ""
+  }
+  if(reglasDeSalida.length==0){
+    return ""
+  }
+  for (const regla of reglasDeSalida) {
+    const resultados = regla.condiciones.map(c => evaluarCondicion(respuestas, c));
+
+    let cumple = true;
+    if (resultados.length === 1) {
+      cumple = resultados[0]; // solo una condición
+    } else if (regla.relacion === "AND") {
+      cumple = resultados.every(r => r === true);
+    } else if (regla.relacion === "OR") {
+      cumple = resultados.some(r => r === true);
+    }else{////CASO LENGUAJE  [0]*-([1]+[2])
+      cumple = evaluarExpresionBooleana(regla.relacion,resultados)
+      if(!cumple){///NO SE CUMPLE
+        return regla.mensaje;
+      }
+    }
+    if (!cumple) {
+      return regla.mensaje;
     }
   }
   return "";
@@ -263,4 +293,58 @@ function evaluarCondicion(respuestas, condicion) {
 }
 
 
+function evaluarExpresionBooleana(expresion, valores) {
+  // Paso 1: reemplazar {i} por true/false
+  let exp = expresion;
+  valores.forEach((valor, i) => {
+    exp = exp.replace(new RegExp(`\\{${i}\\}`, 'g'), valor.toString());
+  });
 
+  // Paso 2: normalizar operadores
+  exp = exp.replace(/AND/g, '&&')
+           .replace(/OR/g, '||')
+           .replace(/-/g, '!'); // "-" lo tratamos como NOT
+
+  // Paso 3: evaluar usando eval
+  return eval(exp);
+}
+
+
+function cumpleObligatoriedad(pregunta,valor){
+  console.log("-"+valor+"-")
+  if(valor==undefined ||valor==null){
+    return false
+  }
+  if(pregunta.tipo== "texto"){
+    return valor.valor!="" && valor.valor!=null;
+  }else if(pregunta.tipo== "numero"){
+    return valor.valor!=""&& valor.valor!=null;
+  }else if(pregunta.tipo== "opcionUnica"){
+    return valor.valor!=""&& valor.valor!=null;    
+  }else if(pregunta.tipo== "opcionMultiple"){
+    if(valor.valor==null){
+      return false
+    }
+    return valor.valor.length>0
+  }else{
+    return false
+  }
+}
+
+
+function getPreguntasRespondidas(encuesta, pila, respuestas) {
+  const mapaRespuestas = Object.fromEntries(respuestas);
+
+  var visitados= encuesta.nodos
+    .filter(n => pila.includes(n.id*1)) // solo nodos visitados
+
+  console.log("visitados",visitados)
+
+  return visitados.flatMap(n =>
+      n.preguntas.map(p => ({
+        id: p.id,
+        descripcion: p.descripcion,
+        valor: mapaRespuestas[p.id] ?? null // si no hay respuesta → null
+      }))
+  );
+}

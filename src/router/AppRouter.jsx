@@ -6,15 +6,15 @@ import Voto from '../pages/Voto';
 import Header from '../components/layout/Header';
 import VotoMejorado from '../presentation/pages/VotoMejorado'
 
-function AppRouter() {
+function AppRouter({casosDeUso}) {
   return (
-    <BrowserRouter>
-      <AppLayout />
+    <BrowserRouter >
+      <AppLayout casosDeUso={casosDeUso}/>
     </BrowserRouter>
   );
 }
 
-function AppLayout() {
+function AppLayout({casosDeUso}) {
   const location = useLocation();
   const isVotarPage = location.pathname.startsWith('/votar');
   const isVotarMejoradoPage = location.pathname.startsWith('/votarMejorado');
@@ -26,7 +26,7 @@ function AppLayout() {
           <Route path="/" element={<Home />} />
           <Route path="/monitoreo/:id" element={<Monitoreo />} />
           <Route path="/votar/:id" element={<Voto />} />
-          <Route path="/votoMejorado/:id" element={<VotoMejorado />} />
+          <Route path="/votoMejorado/:id" element={<VotoMejorado casosDeUso={casosDeUso} />} />
         </Routes>
       </div>
     </>

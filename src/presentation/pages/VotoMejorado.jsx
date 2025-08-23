@@ -2,23 +2,25 @@
 import useVotoMejoradoViewModel from "./useVotoMejoradoViewModel" ;
 import Cabecera from "../components/VotoMejorado/Cabecera";
 import Seccion from "../components/VotoMejorado/Seccion";
+import MensajeSimple from "../components/VotoMejorado/MensajeSimple"
 
-export default function VotoMejorado() {
-  const viewModel =useVotoMejoradoViewModel();
-    console.log()
+export default function VotoMejorado({casosDeUso}) {
+  const viewModel =useVotoMejoradoViewModel(casosDeUso.obtenerEncuestaMejorada,casosDeUso.postEncuestaUseCase);
+
   return (
     <div className="container mt-5 d-flex justify-content-center">
       <div className="col-12 col-md-6">
         <Cabecera 
-        titulo="Titulo 1"
-        descripcion = "Descripcion generica , nada importante por aca..."
+        titulo={viewModel.encuesta.titulo}
+        descripcion = {viewModel.encuesta.descripcion}
         />
 
         <Seccion
+          mostrarIndices={viewModel.encuesta.mostrarIndices||false}
           titulo={
                 viewModel.encuestaFinalizada
                 ?"Encuesta finalizada:"                
-                :"Preguntas: "+(viewModel.seccionActual*1+1)+"/"+viewModel.secciones.length
+                :"Secciones: "+(viewModel.seccionActual*1+1)+"/"+viewModel.secciones.length
             }
           preguntas={viewModel.secciones[viewModel.seccionActual]?.preguntas || []}
           respuestas={viewModel.respuestas}
@@ -30,17 +32,27 @@ export default function VotoMejorado() {
             viewModel.onAnteriorSeccion()
           }}
           onSiguiente={()=>{
-            viewModel.onSiguienteSeccion()
+            viewModel.onSiguienteSeccion()            
           }}
-          onFinalizar={()=>{}}
+          onFinalizar={()=>{
+            viewModel.onEnviar()
+          }}
           onCambio={(idPregunta,valor,valores)=>{
             viewModel.onCambioEnPregunta(idPregunta,valor,valores)
+            viewModel.actualizarPreguntasQueFallaroObligatoriedad(idPregunta)
           }}
           encuestaFinalizada={viewModel.encuestaFinalizada==true}
+          preguntasQueFallaronObligatoriedad={viewModel.preguntasQueFallaroObligatoriedad}
         />
       </div>
-      {/* Overlay de carga */}
-      {viewModel.cargandoEncuesta == 1 && (
+      {viewModel.mensajeSimpleVisible &&(
+        <MensajeSimple
+          titulo={viewModel.mensajeSimpleTitulo}
+          texto={viewModel.mensajeSimpleTexto}
+          onClose={()=>{viewModel.setMensajeSimpleVisible(false)}}
+        />
+      )}
+      {(viewModel.cargandoEncuesta == 1|| viewModel.estadoEnvio==1) && (
         <div style={{
           position: "fixed",
           top: 0,

@@ -5,6 +5,7 @@ import OpcionUnica from "./OpcionUnica"
 import OpcionMultiple from "./OpcionMultiple"
 
 export default function Seccion({
+  mostrarIndices,
   titulo,
   respuestas=[],
   preguntas = [],
@@ -16,7 +17,8 @@ export default function Seccion({
   onAnterior,
   onSiguiente,
   onFinalizar,
-  encuestaFinalizada
+  encuestaFinalizada,
+  preguntasQueFallaronObligatoriedad=[]
 }) {
   return (
     <div className="card w-100 mb-3">
@@ -32,7 +34,7 @@ export default function Seccion({
                 var  valores = []
                 // Buscar si ya existe la respuesta para esta pregunta
                 const indice = respuestas.findIndex(r => r.idPregunta === pregunta.id);
-
+                const falloObligatoriedadValor = preguntasQueFallaronObligatoriedad.includes(pregunta.id)
                 if (indice >= 0) {
                     valor=respuestas[indice].valor
                     valores=respuestas[indice].valores
@@ -48,6 +50,9 @@ export default function Seccion({
                         {...pregunta}
                         valor={valor}
                         onChange={onCambio}
+                        obligatorio={pregunta.obligatoria}
+                        falloObligatoriedad={falloObligatoriedadValor}
+                        mostrarIndice={mostrarIndices}
                     />
                     );
                     break;
@@ -58,6 +63,9 @@ export default function Seccion({
                         {...pregunta}
                         valor={valor}
                         onChange={onCambio}
+                        obligatorio={pregunta.obligatoria}
+                        falloObligatoriedad={falloObligatoriedadValor}
+                        mostrarIndice={mostrarIndices}
                     />
                     );
                     break;
@@ -68,6 +76,9 @@ export default function Seccion({
                         {...pregunta}
                         valor={valor}
                         onChange={onCambio}
+                        obligatorio={pregunta.obligatoria}
+                        falloObligatoriedad={falloObligatoriedadValor}
+                        mostrarIndice={mostrarIndices}
                     />
                     );
                     break;
@@ -78,6 +89,9 @@ export default function Seccion({
                         {...pregunta}
                         valor={valor}
                         onChange={onCambio}
+                        obligatorio={pregunta.obligatoria}
+                        falloObligatoriedad={falloObligatoriedadValor}
+                        mostrarIndice={mostrarIndices}
                     />
                     );
                     break;
